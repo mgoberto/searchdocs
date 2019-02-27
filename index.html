@@ -1,0 +1,191 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <script src="./Scripts/jquery-3.0.0.min.js"></script>
+    <script src="./Scripts/umd/popper.min.js"></script>
+    <script src="./Scripts/bootstrap.min.js"></script>
+
+    <title>Search Docs</title>
+    <!-- Bootstrap core CSS -->
+    <link href="./Content/bootstrap.min.css" rel="stylesheet">
+    <link href="./Content/main.css" rel="stylesheet">
+    <script type="text/javascript">
+        function Search() {
+            var term = $('#term').val();
+            var apiKey = '469DE8F2DB9AABB081C56CD82FE578B2';
+            var apiUrl = 'https://searchdocs.search.windows.net';
+            var apiIndex = 'ab-index-doc';
+            if (term != '') {
+                $.ajax({
+                    method: "GET",
+                    headers: {
+                        'api-key': apiKey,
+                        'Accept': 'application/json'
+                    },
+                    url: apiUrl + "/indexes/" + apiIndex + "/docs?api-version=2017-11-11&$count=true&search=" + term
+                })
+                    .fail(function (data) {
+                        $('#dvResults').hide();
+                        alert('Falha no serviço de pesquisa...');
+                    })
+                    .done(function (data) {
+                        $('#dvResults').show();
+                        if (data.value.length == 0) {
+                            $('#titResult').hide();
+                            $('#titNoResult').show();
+                            $('#idResults').hide();
+                            $('#noResultTerm').html(term);
+                        }
+                        else {
+                            $('#titResult').show();
+                            $('#titNoResult').hide();
+                            $('#idResults').show();
+                            $('#resultTerm').html(term);
+                            $('#resultSize').html(data.value.length);
+                            for (i = 1; i < 10; i++) {
+                                $('#row' + (i + 1)).hide();
+                            }
+                            
+                            for (i = 0; i < data.value.length && i < 10; i++) {
+                                $('#row' + (i + 1)).show();
+                                if (data.value[i].metadata_storage_path.length % 2 == 1)
+                                    urlDoc = window.atob(data.value[i].metadata_storage_path.substring(0, data.value[i].metadata_storage_path.length - 1));
+                                else
+                                    urlDoc = window.atob(data.value[i].metadata_storage_path);
+                                if (urlDoc.substr(urlDoc.length - 1, 1) == "5")
+                                    urlDoc = urlDoc.substring(0, urlDoc.length - 1);
+                                $('#lnk' + (i + 1)).html(data.value[i].metadata_storage_name);
+                                $('#lnk' + (i + 1)).attr("href", urlDoc);
+                                $('#dsc' + (i + 1)).html(ExtrairContent(data.value[i].content, term));
+                            }
+                        }
+                    });
+            }
+        }
+
+        function ExtrairContent(content, search) {
+            content = $.parseHTML(content.replace(/&nbsp;/gi, ' '), null, false).reduce((string, node) => string += node.textContent, "");
+            content = content.replace(/(\r\n\t|\n|\r\t)/gm, ' ');
+            var iPos = content.toLowerCase().indexOf(search.toLowerCase());
+            if (iPos <= 100)
+                lDesc = content.substr(1, 250);
+            else if (iPos + 250 > content.length)
+                lDesc = content.substr(iPos - 40);
+            else
+                lDesc = content.substr(iPos - 40, 250);
+            return replaceTerm(lDesc, search);
+        }
+
+        function replaceTerm(desc, term) {
+            term = term.replace("*", "").replace("*", "");
+            var iPos = desc.toLowerCase().indexOf(term.toLowerCase()); 
+            if (iPos == -1)
+                return desc;
+            return desc.substr(1, iPos - 1) + "<b>" + desc.substr(iPos, term.length) + "</b>" + desc.substr(iPos + term.length);
+        }
+
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top" style="background-color: #003399!important;">
+        <a class="navbar-brand" href="#" style="padding:0px;" ></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </nav>
+    <main role="main" class="container" style="padding-top: 80px;">
+        <div class="text-center">
+            <h1>Busca de Documentos</h1>
+            <div class="row text-center">
+                <div class="col-xs-3 col-sm-1">
+                </div>
+                <div class="col-xs-4 col-sm-8">
+                    <input class="form-control mr-sm-2" type="text" id="term" onkeydown="if (event.which == 13 || event.keyCode == 13) { Search(); }" placeholder="Conteúdo" aria-label="Conteúdo">
+                </div>
+                <div class="col-xs-2 col-sm-2">
+                    <button class="btn btn-outline-success my-2 my-sm-0" onclick="Search();">Pesquisar</button>
+                </div>
+                <div class="col-xs-3 col-sm-1">
+                </div>
+            </div>
+        </div>
+    </main>
+    <div class="container" id="dvResults" style="padding-top: 40px; padding-bottom: 60px; display: none;">
+
+        <hgroup class="mb20">
+            <h1>Resultado da Busca</h1>
+            <h2 id="titResult" style="display: none;" class="lead"><strong class="text-danger" id="resultSize">2</strong> resultados foram encontrar para o termo <strong id="resultTerm" class="text-danger">Lorem</strong></h2>
+            <h2 id="titNoResult" style="display: none;" class="lead">Nenhum resultado encontrado para o termo <strong class="text-danger" id="noResultTerm">Lorem</strong></h2>
+        </hgroup>
+
+        <section class="col-xs-12 col-sm-12 col-md-12" id="idResults" style="display: none;">
+            <article class="search-result row" id="row1" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk1" target="_blank"></a></h3>
+                    <p id="dsc1"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row2" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk2"  target="_blank"></a></h3>
+                    <p id="dsc2"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row3" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk3" target="_blank"></a></h3>
+                    <p id="dsc3"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row4" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk4" target="_blank"></a></h3>
+                    <p id="dsc4"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row5" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk5" target="_blank"></a></h3>
+                    <p id="dsc5"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row6" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk6" target="_blank"></a></h3>
+                    <p id="dsc6"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row7" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk7" target="_blank"></a></h3>
+                    <p id="dsc7"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row8" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk8" target="_blank"></a></h3>
+                    <p id="dsc8"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row9" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk9" target="_blank"></a></h3>
+                    <p id="dsc9"></p>
+                </div>
+            </article>
+            <article class="search-result row" id="row10" style="display: none;">
+                <div class="col-xs-12 col-sm-12 col-md-12">
+                    <h3><a id="lnk10" target="_blank"></a></h3>
+                    <p id="dsc10"></p>
+                </div>
+            </article>
+            
+        </section>
+    </div>
+</body>
+</html>
